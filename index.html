@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>愿意让我成为你的皇帝吗？</title>
+    <link rel="icon" type="image/png" href="./images/icon.ico">
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #FFB6C1;
+            flex-direction: column;
+            position: relative;
+        }
+        .main-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+            transition: 0.3s;
+        }
+        .header-content {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header-image {
+            width: 350px;
+            height: auto;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            border-radius: 10px;
+            transition: 0.3s;
+        }
+        .header-text {
+            font-size: 26px;
+            color: #68495B;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            font-family: 'Microsoft YaHei', sans-serif;
+            min-height: 36px;
+            font-weight: bold;
+        }
+        .scratch-container {
+            display: flex;
+            gap: 50px;
+        }
+        .scratch-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        canvas {
+            width: 300px;
+            height: 100px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            cursor: crosshair;
+            transition: 0.3s;
+        }
+        canvas.locked {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+        .scratch-btn {
+            padding: 8px 25px;
+            font-size: 16px;
+            border-radius: 20px;
+            background: #CC8F30;
+            color: white; /* 修改文字颜色为白色 */
+            border: none;
+            transition: 0.3s;
+            opacity: 0.8;
+            font-weight: bold;
+        }
+        .scratch-btn.active {
+            opacity: 1;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+        }
+        .scratch-btn:not(.active) {
+            cursor: not-allowed;
+        }
+        .true-end {
+        display: none;
+        text-align: center;
+        animation: fadeIn 0.5s;
+        flex-direction: column;  /* 新增 */
+        align-items: center;     /* 新增 */
+    }
+    .true-end img {
+        width: 400px;
+        margin: 15px 0 0;  /* 调整间距 */
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        border-radius: 10px;
+    }
+    .true-end-text {
+        font-size: 28px;
+        color: #68495B;
+        font-weight: bold;
+        margin-bottom: 25px;  /* 增加下边距 */
+    }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="header-content">
+            <img src="./images/1.png" class="header-image" alt="心愿图片">
+            <div class="header-text">愿意让我成为你的皇帝吗？</div>
+        </div>
+        
+        <div class="scratch-container">
+            <div class="scratch-card">
+                <canvas id="cvs1" width="300" height="100"></canvas>
+                <button class="scratch-btn">任选一个</button>
+            </div>
+            <div class="scratch-card">
+                <canvas id="cvs2" width="300" height="100"></canvas>
+                <button class="scratch-btn">买定离手</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="true-end">
+        <div class="true-end-text">那就奖励你一心侍奉朕吧</div>
+        <img src="./images/trueend.png" alt="最终结局">
+    </div>
+
+    <script>
+        let activeCanvas = null;
+        let hasScratched = false;
+        const headerImage = document.querySelector('.header-image');
+        const headerText = document.querySelector('.header-text');
+        const mainContainer = document.querySelector('.main-container');
+        const trueEnd = document.querySelector('.true-end');
+
+        function createScratchCard(canvasId, btn) {
+            const cvs = document.getElementById(canvasId);
+            const ctx = cvs.getContext('2d');
+            let isClearing = false;
+            let isCompleted = false;
+            const threshold = 0.3;
+            let currentPrize = '';
+
+            function initLayers() {
+                currentPrize = Math.random() > 0.5 ? 
+                    './images/zj1.png?' + Date.now() : 
+                    './images/zj.png?' + Date.now();
+
+                const prizeImg = new Image();
+                prizeImg.onload = () => {
+                    cvs.style.background = `url(${prizeImg.src}) no-repeat center center/cover`;
+                    initCover();
+                };
+                prizeImg.src = currentPrize;
+            }
+
+            function initCover() {
+                const coverImg = new Image();
+                coverImg.crossOrigin = "anonymous";
+                coverImg.onload = () => {
+                    ctx.clearRect(0, 0, cvs.width, cvs.height);
+                    ctx.drawImage(coverImg, 0, 0, cvs.width, cvs.height);
+                };
+                coverImg.src = './images/zj-bj.png?' + Date.now();
+            }
+
+            function reset() {
+                if (btn.textContent === '点我领赏') {
+                    mainContainer.style.display = 'none';
+                    trueEnd.style.display = 'flex';
+                    return;
+                }
+
+                if (!btn.classList.contains('active')) return;
+                
+                mainContainer.style.display = 'flex';
+                trueEnd.style.display = 'none';
+                headerImage.src = './images/1.png?' + Date.now();
+                headerText.textContent = '愿意让我成为你的皇帝吗？';
+                
+                activeCanvas = null;
+                hasScratched = false;
+                isCompleted = false;
+                isClearing = false;
+                initLayers();
+                cvs.classList.remove('locked');
+                btn.classList.remove('active');
+                btn.textContent = canvasId === 'cvs1' ? '任选一个' : '买定离手';
+                document.querySelectorAll('canvas').forEach(c => {
+                    c.style.pointerEvents = 'auto';
+                    c.classList.remove('locked');
+                });
+            }
+
+            function lockOthers() {
+                document.querySelectorAll('canvas').forEach(c => {
+                    if(c !== cvs) {
+                        c.classList.add('locked');
+                        c.style.pointerEvents = 'none';
+                    }
+                });
+            }
+
+            initLayers();
+            btn.addEventListener('click', reset);
+
+            function getPosition(e) {
+                const rect = cvs.getBoundingClientRect();
+                return {
+                    x: (e.clientX - rect.left) * (cvs.width / rect.width),
+                    y: (e.clientY - rect.top) * (cvs.height / rect.height)
+                };
+            }
+
+            function handleScratch(e) {
+                if (isCompleted || !isClearing) return;
+                
+                if (!hasScratched) {
+                    hasScratched = true;
+                    activeCanvas = cvs;
+                    lockOthers();
+                }
+
+                const pos = getPosition(e);
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 15, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.clearRect(0, 0, cvs.width, cvs.height);
+                ctx.restore();
+
+                if (performance.now() % 5 === 0) {
+                    const imageData = ctx.getImageData(0, 0, cvs.width, cvs.height);
+                    const cleared = imageData.data.filter((_,i) => i%4 === 3 && imageData.data[i] < 128).length;
+                    
+                    if (cleared >= cvs.width * cvs.height * threshold) {
+                        isCompleted = true;
+                        ctx.clearRect(0, 0, cvs.width, cvs.height);
+                        
+                        if(currentPrize.includes('zj1.png')) {
+                            headerImage.src = './images/end2.png?' + Date.now();
+                            headerText.textContent = '爱卿平身！';
+                            btn.textContent = '点我领赏';
+                        } else {
+                            headerImage.src = './images/end1.png?' + Date.now();
+                            headerText.textContent = '拖下去，斩了！';
+                            btn.textContent = '再来一次';
+                        }
+                        btn.classList.add('active');
+                    }
+                }
+            }
+
+            cvs.addEventListener('mousedown', () => {
+                if (!isCompleted && !activeCanvas) {
+                    isClearing = true;
+                }
+            });
+
+            cvs.addEventListener('touchstart', e => {
+                if (!isCompleted && !activeCanvas) {
+                    e.preventDefault();
+                    isClearing = true;
+                }
+            });
+
+            cvs.addEventListener('mousemove', handleScratch);
+            cvs.addEventListener('touchmove', e => handleScratch(e.touches[0]));
+            
+            document.addEventListener('mouseup', () => {
+                if (!isCompleted && hasScratched) {
+                    activeCanvas = null;
+                    hasScratched = false;
+                    document.querySelectorAll('canvas').forEach(c => c.classList.remove('locked'));
+                }
+                isClearing = false;
+            });
+
+            document.addEventListener('touchend', () => {
+                if (!isCompleted && hasScratched) {
+                    activeCanvas = null;
+                    hasScratched = false;
+                    document.querySelectorAll('canvas').forEach(c => c.classList.remove('locked'));
+                }
+                isClearing = false;
+            });
+        }
+
+        createScratchCard('cvs1', document.querySelector('#cvs1 + .scratch-btn'));
+        createScratchCard('cvs2', document.querySelector('#cvs2 + .scratch-btn'));
+    </script>
+</body>
+</html>
